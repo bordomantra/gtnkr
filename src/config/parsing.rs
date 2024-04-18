@@ -1,3 +1,15 @@
+use super::config_file::ConfigFile;
+use super::Launch;
+
+impl Launch {
+    pub async fn from_config_file(mut file: ConfigFile) -> Result<Self, ron::de::SpannedError> {
+        match &file.read_to_string().await {
+            Err(error) => panic!("Failed to read the config file [{file:#?}], see: {error:#?}"),
+            Ok(contents) => Ok(ron::from_str::<Launch>(contents)?),
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::super::{Launch, ScreenResolution, VulkanDriver};

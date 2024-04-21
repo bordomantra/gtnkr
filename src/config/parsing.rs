@@ -1,21 +1,50 @@
 use super::config_file::ConfigFile;
+use super::ConfigError;
 use super::Launch;
+use ron::de::SpannedError;
 
 impl Launch {
-    pub async fn from_config_file(mut file: ConfigFile) -> Result<Self, ron::de::SpannedError> {
-        match &file.read_to_string().await {
-            Err(error) => panic!("Failed to read the config file [{file:#?}], see: {error:#?}"),
-            Ok(contents) => Ok(ron::from_str::<Launch>(contents)?),
+    pub async fn from_config_file(mut file: ConfigFile) -> Result<Self, ConfigError> {
+        let contents = &file.read_to_string().await?;
+
+        match parse_launch_config_from_ron_string(contents) {
+            Ok(launch_config) => Ok(launch_config),
+            Err(info) => {
+                let (explanation, line, column) = info;
+
+                Err(ConfigError::ParseError(
+                    file.path,
+                    explanation,
+                    line,
+                    column,
+                ))
+            }
+        }
+    }
+}
+
+fn parse_launch_config_from_ron_string(string: &str) -> Result<Launch, (String, u16, u16)> {
+    match ron::from_str::<Launch>(string) {
+        Ok(launch_config) => Ok(launch_config),
+        Err(error) => {
+            let explanation = error.code.to_string();
+            let position = error.position;
+
+            let (line, column) = (position.line as u16, position.col as u16);
+
+            Err((explanation, line, column))
         }
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use super::super::{Launch, ScreenResolution, VulkanDriver};
+    use super::super::{ScreenResolution, VulkanDriver};
+    use super::parse_launch_config_from_ron_string;
+    use color_eyre::eyre::{eyre, Result};
 
     #[test]
-    fn parse_ron_into_launch_config() {
+    fn parse_ron_into_launch_config() -> Result<()> {
         let launch_config_string = r#"(
             gamemode: false,
             mangohud: false,
@@ -32,14 +61,11 @@ mod tests {
             ]
         )"#;
 
-        let launch_config_result: Result<Launch, _> = ron::from_str(launch_config_string);
+        match parse_launch_config_from_ron_string(launch_config_string) {
+            Err(info) => {
+                let (explanation, line, column) = info;
 
-        match launch_config_result {
-            Err(error) => {
-                panic!(
-                    "Failed to deserialize the launch config from RON, see: {:?}",
-                    error
-                );
+                Err(eyre!("Failed to parse the launch configuration from RON. Position {line}:{column}, {explanation}."))
             }
             Ok(launch_config) => {
                 assert!(!launch_config.gamemode);
@@ -58,6 +84,8 @@ mod tests {
                 assert!(gamescope_config.start_as_fullscreen);
                 assert!(!gamescope_config.force_grab_cursor);
                 assert!(gamescope_config.tearing);
+
+                Ok(())
             }
         }
     }

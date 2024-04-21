@@ -10,3 +10,4 @@ tokio = { version = "1.35.0", features = ["full"] }
 color-eyre = "0.6.3"
 nix = { version = "0.28.0", features = ["process", "user"] }
 lazy_static = "1.4.0"
+thiserror = "1.0.59"

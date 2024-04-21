@@ -1,6 +1,7 @@
+use super::ConfigError;
 use nix::unistd::{Uid, User};
 use std::path::PathBuf;
-use tokio::{fs, fs::OpenOptions, io, io::AsyncReadExt};
+use tokio::{fs::OpenOptions, io, io::AsyncReadExt};
 
 fn get_linux_username() -> String {
     let uid = Uid::current();
@@ -23,47 +24,51 @@ fn get_linux_username() -> String {
 
 #[derive(Debug)]
 pub struct ConfigFile {
-    path: PathBuf,
+    pub path: PathBuf,
 }
 
 impl ConfigFile {
-    pub async fn from_filename(filename: &str) -> Option<Self> {
+    pub async fn from_filename(filename: &str) -> Result<Option<Self>, ConfigError> {
         let linux_username = get_linux_username();
         let application_name = env!("CARGO_PKG_NAME");
 
         if linux_username == "root" {
-            panic!("Attempted to get the config file for the root user, this isn't possible. Run the application as a normal user.")
+            return Err(ConfigError::UserIsRoot);
         }
 
         let config_directory_path = PathBuf::from(&format!(
             "/home/{linux_username}/.config/{application_name}"
         ));
 
-        if !config_directory_path.is_dir() {
-            match fs::create_dir_all(&config_directory_path).await {
-                Ok(_) => (),
-                Err(error) => panic!("Failed to create the config directory, see: {error:#?}"),
-            }
-        };
-
         let config_file_path = config_directory_path.join(format!("{filename}.ron"));
 
         if config_file_path.is_file() {
-            return Some(ConfigFile {
+            return Ok(Some(ConfigFile {
                 path: config_file_path,
-            });
+            }));
         }
 
-        None
+        Ok(None)
     }
 
-    pub async fn read_to_string(&mut self) -> Result<String, io::Error> {
-        let mut file = OpenOptions::new().read(true).open(&self.path).await?;
+    pub async fn read_to_string(&mut self) -> Result<String, ConfigError> {
+        match OpenOptions::new().read(true).open(&self.path).await {
+            Err(error) => match error.kind() {
+                io::ErrorKind::PermissionDenied => {
+                    Err(ConfigError::PermissionDenied(self.path.to_owned()))
+                }
+                io::ErrorKind::NotFound => Err(ConfigError::NotFound(self.path.to_owned())),
+                _ => todo!(),
+            },
+            Ok(mut file) => {
+                let mut contents = String::new();
 
-        let mut contents = String::new();
+                file.read_to_string(&mut contents).await.map_err(|error| {
+                    ConfigError::InvalidFileEncoding(self.path.to_owned(), error)
+                })?;
 
-        file.read_to_string(&mut contents).await?;
-
-        Ok(contents)
+                Ok(contents)
+            }
+        }
     }
 }

@@ -1,6 +1,6 @@
-use super::{Gamescope, Launch, ScreenResolution, VulkanDriver};
+use super::{GameConfig, Gamescope, ScreenResolution, VulkanDriver};
 
-const LAUNCH: Launch = Launch {
+const GAME: GameConfig = GameConfig {
     gamemode: true,
     mangohud: true,
     vulkan_driver: VulkanDriver::Amdvlk,
@@ -15,27 +15,27 @@ const GAMESCOPE: Gamescope = Gamescope {
     tearing: true,
 };
 
-pub mod launch {
+pub mod game {
     use super::*;
 
     pub fn gamemode() -> bool {
-        LAUNCH.gamemode
+        GAME.gamemode
     }
 
     pub fn mangohud() -> bool {
-        LAUNCH.mangohud
+        GAME.mangohud
     }
 
     pub fn vulkan_driver() -> VulkanDriver {
-        LAUNCH.vulkan_driver
+        GAME.vulkan_driver
     }
 
     pub fn gamescope() -> Gamescope {
-        LAUNCH.gamescope
+        GAME.gamescope
     }
 
     pub fn environment_variables() -> Vec<(String, String)> {
-        LAUNCH.environment_variables
+        GAME.environment_variables
     }
 }
 

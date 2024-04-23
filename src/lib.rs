@@ -1,1 +1,1 @@
-mod config;
+mod game_config;

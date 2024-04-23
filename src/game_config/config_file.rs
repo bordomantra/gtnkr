@@ -1,6 +1,6 @@
-use super::ConfigError;
+use super::GameConfigError;
 use nix::unistd::{Uid, User};
-use std::path::PathBuf;
+use std::{env, path::PathBuf};
 use tokio::{fs::OpenOptions, io, io::AsyncReadExt};
 
 fn get_linux_username() -> String {
@@ -23,27 +23,34 @@ fn get_linux_username() -> String {
 }
 
 #[derive(Debug)]
-pub struct ConfigFile {
+pub struct GameConfigFile {
     pub path: PathBuf,
 }
 
-impl ConfigFile {
-    pub async fn from_filename(filename: &str) -> Result<Option<Self>, ConfigError> {
+impl GameConfigFile {
+    pub async fn from_filename(filename: &str) -> Result<Option<Self>, GameConfigError> {
         let linux_username = get_linux_username();
         let application_name = env!("CARGO_PKG_NAME");
+        let config_dir_env_var_key = format!("{}_GAME_CONFIG_DIR", application_name.to_uppercase());
 
-        if linux_username == "root" {
-            return Err(ConfigError::UserIsRoot);
-        }
+        let config_dir_path = match env::var(config_dir_env_var_key) {
+            Ok(dir) => PathBuf::from(dir),
+            Err(_) => {
+                if linux_username == "root" {
+                    return Err(GameConfigError::UserIsRoot);
+                }
 
-        let config_directory_path = PathBuf::from(&format!(
-            "/home/{linux_username}/.config/{application_name}"
-        ));
+                PathBuf::from(&format!(
+                    "/home/{}/.config/{}/game_configs",
+                    linux_username, application_name
+                ))
+            }
+        };
 
-        let config_file_path = config_directory_path.join(format!("{filename}.ron"));
+        let config_file_path = config_dir_path.join(filename);
 
         if config_file_path.is_file() {
-            return Ok(Some(ConfigFile {
+            return Ok(Some(GameConfigFile {
                 path: config_file_path,
             }));
         }
@@ -51,20 +58,20 @@ impl ConfigFile {
         Ok(None)
     }
 
-    pub async fn read_to_string(&mut self) -> Result<String, ConfigError> {
+    pub async fn read_to_string(&mut self) -> Result<String, GameConfigError> {
         match OpenOptions::new().read(true).open(&self.path).await {
             Err(error) => match error.kind() {
                 io::ErrorKind::PermissionDenied => {
-                    Err(ConfigError::PermissionDenied(self.path.to_owned()))
+                    Err(GameConfigError::PermissionDenied(self.path.to_owned()))
                 }
-                io::ErrorKind::NotFound => Err(ConfigError::NotFound(self.path.to_owned())),
-                _ => todo!(),
+                io::ErrorKind::NotFound => Err(GameConfigError::NotFound(self.path.to_owned())),
+                _ => Err(GameConfigError::UnexpectedIoError(error)),
             },
             Ok(mut file) => {
                 let mut contents = String::new();
 
                 file.read_to_string(&mut contents).await.map_err(|error| {
-                    ConfigError::InvalidFileEncoding(self.path.to_owned(), error)
+                    GameConfigError::InvalidFileEncoding(self.path.to_owned(), error)
                 })?;
 
                 Ok(contents)

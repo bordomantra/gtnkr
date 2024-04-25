@@ -7,6 +7,7 @@ mod parsing;
 mod screen_resolution;
 mod vulkan_driver;
 
+pub use config_file::GameConfigFile;
 pub use gamescope::Gamescope;
 pub use screen_resolution::ScreenResolution;
 use std::path::PathBuf;
@@ -55,4 +56,10 @@ pub struct GameConfig {
 
     #[serde(default = "game_config_default_values::environment_variables")]
     pub environment_variables: Vec<(String, String)>,
+}
+
+impl Default for GameConfig {
+    fn default() -> Self {
+        default_values::GAME
+    }
 }

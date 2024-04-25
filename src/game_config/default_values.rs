@@ -1,6 +1,6 @@
 use super::{GameConfig, Gamescope, ScreenResolution, VulkanDriver};
 
-const GAME: GameConfig = GameConfig {
+pub const GAME: GameConfig = GameConfig {
     gamemode: true,
     mangohud: true,
     vulkan_driver: VulkanDriver::Amdvlk,

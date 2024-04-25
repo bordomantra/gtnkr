@@ -51,6 +51,8 @@ impl Gamescope {
             }
         };
 
-        gamescope_path + " " + &arguments.join(" ")
+        let arguments_as_string = arguments.join(" ");
+
+        format!("{gamescope_path} {arguments_as_string}")
     }
 }

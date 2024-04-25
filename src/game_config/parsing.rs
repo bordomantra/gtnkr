@@ -49,9 +49,8 @@ mod tests {
         )"#;
 
     fn set_game_config_dir_env_var(directory_path: &Path) {
-        let application_name = env!("CARGO_PKG_NAME");
-        let game_config_dir_env_var_key =
-            format!("{}_GAME_CONFIG_DIR", application_name.to_uppercase());
+        let application_name = env!("CARGO_PKG_NAME").to_uppercase();
+        let game_config_dir_env_var_key = format!("{application_name}_GAME_CONFIG_DIR");
 
         env::set_var(game_config_dir_env_var_key, directory_path);
     }

@@ -67,7 +67,7 @@ impl GameLauncher {
             .iter()
             .for_each(|(key, value)| env::set_var(key, value));
 
-        let launch_command_string = format!("{} {}", launch_command.join(" "), command,);
+        let launch_command_string = format!("{} {}", launch_command.join(" "), command);
 
         let process = Command::new("/bin/sh")
             .arg("-c")

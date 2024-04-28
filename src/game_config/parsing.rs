@@ -28,6 +28,7 @@ impl GameConfig {
 mod tests {
     use super::super::{config_file::GameConfigFile, GameConfig, ScreenResolution, VulkanDriver};
     use color_eyre::eyre;
+    use lazy_static::lazy_static;
     use std::{env, path::Path};
     use tempdir::TempDir;
     use tokio::{fs, io::AsyncWriteExt};
@@ -48,11 +49,9 @@ mod tests {
             ]
         )"#;
 
-    fn set_game_config_dir_env_var(directory_path: &Path) {
-        let application_name = env!("CARGO_PKG_NAME").to_uppercase();
-        let game_config_dir_env_var_key = format!("{application_name}_GAME_CONFIG_DIR");
-
-        env::set_var(game_config_dir_env_var_key, directory_path);
+    lazy_static! {
+        static ref GAME_CONFIG_DIR_ENV_KEY: String =
+            format!("{}_GAME_CONFIG_DIR", env!("CARGO_PKG_NAME").to_uppercase());
     }
 
     #[tokio::test]
@@ -66,11 +65,15 @@ mod tests {
         // With this environment variable set, GameConfigFile::from_filename()
         // searches the file name in the specified directory, instead of the default
         // /home/<LINUX_USERNAME>/.config/<CARGO_PKG_NAME>/game_configs.
-        set_game_config_dir_env_var(temp_dir.path());
+        // This should be unset if any of the other tests use tracing_test::traced_test, because
+        // because those tests can use the environment values set by other tests
+        env::set_var(GAME_CONFIG_DIR_ENV_KEY.as_str(), temp_dir.path());
 
         let config_file = GameConfigFile::from_filename("test_config.ron")
             .await?
             .expect("File `test_config.ron` couldn't be found");
+
+        env::remove_var(GAME_CONFIG_DIR_ENV_KEY.as_str());
 
         let config = GameConfig::from_game_config_file(config_file).await?;
 

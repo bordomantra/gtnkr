@@ -1,6 +1,6 @@
 #![allow(unused)]
 
-use crate::game_config::{GameConfig, GameConfigError, GameConfigFile};
+use crate::game_config::{GameConfig, GameConfigError, GameConfigFile, Gamescope};
 use lazy_static::lazy_static;
 use regex::Regex;
 use std::path::{Path, PathBuf};
@@ -8,7 +8,7 @@ use std::{env, process::Stdio};
 use tokio::{
     fs, io,
     io::{unix::AsyncFd, AsyncBufReadExt, AsyncRead, BufReader},
-    process::Command,
+    process::{ChildStderr, Command},
 };
 
 #[derive(Debug, thiserror::Error)]
@@ -71,50 +71,30 @@ impl GameLauncher {
         let default_display_value =
             env::var("DISPLAY").expect("Failed to get the default $DISPLAY");
 
-        if !config.gamescope.steam_overlay_fix {
+        let _gamescope_pid = if !config.gamescope.steam_overlay_fix {
             launch_command.push(&gamescope_command);
+
+            None
         } else {
-            let gamescope_process = Command::new("/bin/sh")
-                .arg("-c")
-                .arg(gamescope_command)
-                .stderr(Stdio::piped())
-                .spawn()
-                .map_err(GameLauncherError::RunCommand)?;
+            match spawn_gamescope_and_extract_xwayland_display(&gamescope_command).await {
+                Err(error) => {
+                    tracing::error!(
+                        "Disabled GAMESCOPE.steam_overlay_fix due to an error, see: {error}"
+                    );
 
-            let stderr = gamescope_process
-                .stderr
-                .expect("Failed to get the STDERR of the gamescope command");
+                    launch_command.push(&gamescope_command);
 
-            let mut stderr_lines = BufReader::new(stderr).lines();
-
-            lazy_static! {
-                static ref REGEX: Regex = Regex::new(r#"Starting Xwayland on :(\d+)"#)
-                    .expect("Failed to compile the regex");
-            }
-
-            let (tx, mut rx) = tokio::sync::oneshot::channel::<u16>();
-
-            let task_handle = tokio::spawn(async move {
-                while let Some(line) = stderr_lines.next_line().await.expect("Failed next line") {
-                    if let Some(Ok(display_number)) = REGEX.captures(&line).and_then(|captures| {
-                        captures
-                            .get(1)
-                            .map(|r#match| r#match.as_str().parse::<u16>())
-                    }) {
-                        tx.send(display_number)
-                            .expect("Failed to send the gamescope display number through the oneshot channel");
-
-                        break;
-                    }
+                    None
                 }
-            });
+                Ok(result) => {
+                    let (display_number, pid) = result;
 
-            let display_number = rx.await.expect(
-                "Failed to receive the gamescope display number through the oneshot channel",
-            );
+                    env::set_var("DISPLAY", format!(":{display_number}"));
 
-            env::set_var("DISPLAY", format!(":{display_number}"));
-        }
+                    Some(pid)
+                }
+            }
+        };
 
         launch_command.push(config.vulkan_driver.as_command().await);
 
@@ -160,4 +140,80 @@ impl GameLauncher {
             executable_path.to_path_buf(),
         ))
     }
+}
+
+#[derive(Debug, thiserror::Error)]
+pub enum SpawnGamescopeAndExtractXwaylandDisplayError {
+    #[error("Gamescope's process doesn't have a STDERR")]
+    Stderr,
+
+    #[error("Failed to run the gamescope command, see: {0:#?}")]
+    RunCommand(io::Error),
+
+    #[error("Failed to read the next line in gamescope process's STDERR, see: {0:#?}")]
+    NextLine(io::Error),
+
+    #[error("Xwayland display number could not be found")]
+    DisplayNumber,
+}
+
+fn extract_xwayland_display_from_string(string: &str) -> Option<u16> {
+    lazy_static! {
+        static ref REGEX: Regex =
+            Regex::new(r#"Starting Xwayland on :(\d+)"#).expect("Failed to compile the regex");
+    }
+
+    if let Some(Ok(display_number)) = REGEX.captures(string).and_then(|captures| {
+        captures
+            .get(1)
+            .map(|r#match| r#match.as_str().parse::<u16>())
+    }) {
+        return Some(display_number);
+    }
+
+    None
+}
+
+async fn extract_xwayland_display_from_gamescope_stderr(
+    stderr: ChildStderr,
+) -> Result<Option<u16>, SpawnGamescopeAndExtractXwaylandDisplayError> {
+    let mut lines = BufReader::new(stderr).lines();
+
+    while let Some(line) = lines
+        .next_line()
+        .await
+        .map_err(SpawnGamescopeAndExtractXwaylandDisplayError::NextLine)?
+    {
+        if let Some(display_number) = extract_xwayland_display_from_string(&line) {
+            return Ok(Some(display_number));
+        }
+    }
+
+    Ok(None)
+}
+
+async fn spawn_gamescope_and_extract_xwayland_display(
+    gamescope_command: &str,
+) -> Result<(u16, u32), SpawnGamescopeAndExtractXwaylandDisplayError> {
+    let gamescope_process = Command::new("/bin/sh")
+        .arg("-c")
+        .arg(gamescope_command)
+        .stderr(Stdio::piped())
+        .spawn()
+        .map_err(SpawnGamescopeAndExtractXwaylandDisplayError::RunCommand)?;
+
+    let gamescope_pid = gamescope_process
+        .id()
+        .expect("Failed to get gamescope's PID");
+
+    if let Some(stderr) = gamescope_process.stderr {
+        if let Some(display_number) = extract_xwayland_display_from_gamescope_stderr(stderr).await?
+        {
+            return Ok((display_number, gamescope_pid));
+        }
+
+        return Err(SpawnGamescopeAndExtractXwaylandDisplayError::DisplayNumber);
+    }
+
+    Err(SpawnGamescopeAndExtractXwaylandDisplayError::Stderr)
 }

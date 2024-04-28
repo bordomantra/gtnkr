@@ -1,6 +1,4 @@
-#![allow(unused)]
-
-use crate::game_config::{GameConfig, GameConfigError, GameConfigFile, Gamescope};
+use crate::game_config::{GameConfig, GameConfigError, GameConfigFile};
 use lazy_static::lazy_static;
 use nix::{
     errno::Errno,
@@ -8,11 +6,11 @@ use nix::{
     unistd::Pid,
 };
 use regex::Regex;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use std::{env, process::Stdio};
 use tokio::{
-    fs, io,
-    io::{unix::AsyncFd, AsyncBufReadExt, AsyncRead, BufReader},
+    io,
+    io::{AsyncBufReadExt, BufReader},
     process::{ChildStderr, Command},
 };
 
@@ -34,9 +32,7 @@ pub enum GameLauncherError {
     RunCommand(io::Error),
 }
 
-pub struct GameLauncher {
-    config: GameConfig,
-}
+pub struct GameLauncher {}
 
 impl GameLauncher {
     pub async fn launch_by_command(
@@ -58,8 +54,6 @@ impl GameLauncher {
                 GameConfig::default()
             }
         };
-
-        let gamescope_command = config.gamescope.as_command();
 
         let mut launch_command: Vec<&str> = Vec::new();
 

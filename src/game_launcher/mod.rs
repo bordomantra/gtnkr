@@ -2,6 +2,11 @@
 
 use crate::game_config::{GameConfig, GameConfigError, GameConfigFile, Gamescope};
 use lazy_static::lazy_static;
+use nix::{
+    errno::Errno,
+    sys::{signal, signal::Signal, wait, wait::WaitPidFlag},
+    unistd::Pid,
+};
 use regex::Regex;
 use std::path::{Path, PathBuf};
 use std::{env, process::Stdio};
@@ -71,7 +76,7 @@ impl GameLauncher {
         let default_display_value =
             env::var("DISPLAY").expect("Failed to get the default $DISPLAY");
 
-        let _gamescope_pid = if !config.gamescope.steam_overlay_fix {
+        let possible_gamescope_pid = if !config.gamescope.steam_overlay_fix {
             launch_command.push(&gamescope_command);
 
             None
@@ -111,6 +116,26 @@ impl GameLauncher {
             .output()
             .await
             .map_err(GameLauncherError::RunCommand)?;
+
+        if let Some(gamescope_pid) = possible_gamescope_pid {
+            match signal::kill(Pid::from_raw(gamescope_pid as i32), Signal::SIGINT) {
+                Err(error) => {
+                    if error != Errno::ESRCH {
+                        tracing::error!("Failed to terminate the gamescope's process, it might still be running in the background. See: {error:#?}")
+                    }
+                }
+                Ok(_) => {
+                    if let Err(error) = wait::waitpid(
+                        Pid::from_raw(gamescope_pid as i32),
+                        Some(WaitPidFlag::__WALL),
+                    ) {
+                        tracing::error!(
+                            "Failed to wait for gamescope process to terminate, See: {error:#?}"
+                        );
+                    }
+                }
+            }
+        }
 
         env::set_var("DISPLAY", default_display_value);
 

@@ -18,6 +18,9 @@ pub struct Gamescope {
 
     #[serde(default = "gamescope_default_values::tearing")]
     pub tearing: bool,
+
+    #[serde(default = "gamescope_default_values::steam_overlay_fix")]
+    pub steam_overlay_fix: bool,
 }
 
 impl Gamescope {

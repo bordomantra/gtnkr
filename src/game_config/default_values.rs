@@ -13,6 +13,7 @@ const GAMESCOPE: Gamescope = Gamescope {
     start_as_fullscreen: true,
     force_grab_cursor: true,
     tearing: true,
+    steam_overlay_fix: true,
 };
 
 pub mod game {
@@ -56,5 +57,9 @@ pub mod gamescope {
 
     pub fn tearing() -> bool {
         GAMESCOPE.tearing
+    }
+
+    pub fn steam_overlay_fix() -> bool {
+        GAMESCOPE.steam_overlay_fix
     }
 }

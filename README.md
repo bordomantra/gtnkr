@@ -1,4 +1,11 @@
+## Usage
+
+Put this into Game Settings > General > Launch Options
+`gtnkr launch "%command%"`
+
 Example config for Black Desert Online (SteamAppID: 582660) running on Arch Linux | Wayland (Hyprland):
+
+Launch options: `gtnkr launch "%command% --use-d3d11"`
 
 `~/.config/gtnkr/game_configs/582660.ron`
 ```ron
@@ -21,7 +28,6 @@ Example config for Black Desert Online (SteamAppID: 582660) running on Arch Linu
         start_as_fullscreen: true,
         force_grab_cursor: true,
         tearing: true,
-        steam_overlay_fix: false, // Seems to be broken now, might still work on some specific games in specific situations.
         mangoapp: true,
 
         // There's also Auto, maybe you should use that one.

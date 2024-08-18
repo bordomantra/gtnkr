@@ -1,12 +1,10 @@
-## Extra requirements
+## Optional requirements
 
-Hard requirements:
-- [AMD Vulkan Prefixes](https://gitlab.com/AndrewShark/amd-vulkan-prefixes) for setting the vulkan_driver
-
-Optional requirements:
+I highly suggest you to install
 - [gamemode](https://github.com/FeralInteractive/gamemode) for Config::gamemode
 - [MangoHud](https://github.com/flightlessmango/MangoHud) for Config::mangohud
 - [Hyprland](https://github.com/hyprwm/Hyprland) for Config::gamescope::source_resolution: SourceResolution::Native
+- [gamescope](https://github.com/ValveSoftware/gamescope) for Config::gamescope
 
 ## Usage
 

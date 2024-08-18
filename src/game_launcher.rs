@@ -1,6 +1,16 @@
+use crate::config::find_executable;
 use crate::config::{GameConfig, GameConfigError, GameConfigFile};
 use std::{env, path::PathBuf};
 use tokio::{io, process::Command};
+
+const GAMEMODERUN_EXECUTABLE_NAME: &str = "gamemoderun";
+const GAMEMODERUN_PKG: &str = "[gamemode](https://github.com/FeralInteractive/gamemode)";
+
+const MANGOHUD_EXECUTABLE_NAME: &str = "mangohud";
+const MANGOHUD_PKG: &str = "[MangoHud](https://github.com/flightlessmango/MangoHud)";
+
+const GAMESCOPE_EXECUTABLE_NAME: &str = "gamescope";
+const GAMESCOPE_PKG: &str = "[gamescope](https://github.com/ValveSoftware/gamescope)";
 
 #[derive(Debug, thiserror::Error)]
 pub enum GameLauncherError {
@@ -43,24 +53,25 @@ impl GameLauncher {
             }
         };
 
-        let mut launch_command: Vec<&str> = Vec::new();
+        let mut launch_command: Vec<String> = Vec::new();
 
         if config.gamemode {
-            launch_command.push("/bin/gamemoderun")
+            launch_command.push(find_executable(
+                GAMEMODERUN_EXECUTABLE_NAME,
+                GAMEMODERUN_PKG,
+            ));
         }
 
         if config.mangohud {
-            launch_command.push("/bin/mangohud")
+            launch_command.push(find_executable(MANGOHUD_EXECUTABLE_NAME, MANGOHUD_PKG));
         }
 
-        let gamescope_command = config.gamescope.as_command().await;
-
-        launch_command.push(&gamescope_command);
+        let _ = find_executable(GAMESCOPE_EXECUTABLE_NAME, GAMESCOPE_PKG);
+        launch_command.push(config.gamescope.as_command());
 
         if let Some(vulkan_driver) = config.vulkan_driver.as_command() {
             launch_command.push(vulkan_driver);
         }
-
 
         config
             .environment_variables
@@ -71,7 +82,7 @@ impl GameLauncher {
 
         tracing::info!("Launching the game with [{launch_command_string}]");
 
-        Command::new("/bin/sh")
+        Command::new("sh")
             .arg("-c")
             .arg(launch_command_string)
             .output()

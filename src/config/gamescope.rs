@@ -82,11 +82,11 @@ impl GamescopeBackend {
 }
 
 impl Gamescope {
-    pub async fn as_command(&self) -> String {
+    pub fn as_command(&self) -> String {
         let mut arguments: Vec<&str> = Vec::new();
 
         let screen_resolution_as_argument =
-            self.source_resolution.as_gamescope_command_argument().await;
+            self.source_resolution.as_gamescope_command_argument();
 
         arguments.push(&screen_resolution_as_argument);
 

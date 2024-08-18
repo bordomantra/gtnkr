@@ -13,6 +13,7 @@ use serde::Deserialize;
 use std::path::PathBuf;
 use tokio::io;
 pub use vulkan_driver::VulkanDriver;
+use which::which;
 
 #[derive(Debug, thiserror::Error)]
 pub enum GameConfigError {
@@ -73,6 +74,17 @@ impl Default for GameConfig {
             vulkan_driver: VulkanDriver::default(),
             gamescope: Gamescope::default(),
             environment_variables: _default_environment_variables(),
+        }
+    }
+}
+
+pub fn find_executable(name: &str, package_to_install: &str) -> String {
+    match which(name) {
+        Err(error) => panic!("Failed to find the {name} executable, do you have {package_to_install} installed? See: {error:#?}"),
+        Ok(executable_path) => {
+            let executable_path_string = executable_path.to_string_lossy().to_string();
+
+            executable_path_string
         }
     }
 }

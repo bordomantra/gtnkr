@@ -16,10 +16,10 @@ pub enum ScreenResolution {
 }
 
 impl ScreenResolution {
-    pub async fn as_gamescope_command_argument(&self) -> String {
+    pub fn as_gamescope_command_argument(&self) -> String {
         match self {
             Self::Custom(width, height) => format!("-w {width} -h {height}"),
-            Self::Native => match get_native_screen_resolution().await {
+            Self::Native => match get_native_screen_resolution() {
                 Err(error) => panic!("Failed to get the native screen resolution, see: {error:#?}"),
                 Ok(screen_resolution) => {
                     let (width, height) = screen_resolution;
@@ -38,7 +38,7 @@ struct Monitor {
     focused: bool,
 }
 
-async fn get_native_screen_resolution() -> hyprland::Result<(u16, u16)> {
+fn get_native_screen_resolution() -> hyprland::Result<(u16, u16)> {
     let active_monitor_info = HyprlandMonitor::get_active()?;
 
     Ok((active_monitor_info.width, active_monitor_info.height))
@@ -51,7 +51,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_get_native_screen_resolution() -> Result<()> {
-        get_native_screen_resolution().await?;
+        get_native_screen_resolution()?;
 
         Ok(())
     }

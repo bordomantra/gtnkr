@@ -1,3 +1,13 @@
+## Extra requirements
+
+Hard requirements:
+- [AMD Vulkan Prefixes](https://gitlab.com/AndrewShark/amd-vulkan-prefixes) for setting the vulkan_driver
+
+Optional requirements:
+- [gamemode](https://github.com/FeralInteractive/gamemode) for Config::gamemode
+- [MangoHud](https://github.com/flightlessmango/MangoHud) for Config::mangohud
+- [Hyprland](https://github.com/hyprwm/Hyprland) for Config::gamescope::source_resolution: SourceResolution::Native
+
 ## Usage
 
 Put this into Game Settings > General > Launch Options
@@ -10,20 +20,16 @@ Launch options: `gtnkr launch "%command% --use-d3d11"`
 `~/.config/gtnkr/game_configs/582660.ron`
 ```ron
 (
-    // https://github.com/FeralInteractive/gamemode is required
     gamemode: true,
 
     // If you're using gamescope, set mangoapp to true instead of this. mangoapp doesn't seem to work on my system, so I'll keep it.
-    // https://github.com/flightlessmango/MangoHud is required
     mangohud: true,
 
     // There's also Amdvlk but it doesn't work with Black Desert Online
-    // https://github.com/FeralInteractive/gamemode is required
     vulkan_driver: Radv,
     gamescope: (
-        // There's also Native, it requires https://gitlab.freedesktop.org/xorg/app/xrandr.
-        // It also might not work as intended if you've multiple monitors, maybe give it a shot.
-        source_resolution: Custom(1920, 1080),
+		// There's also Custom(width, height) which will work without Hyprland
+        source_resolution: Native,
 
         start_as_fullscreen: true,
         force_grab_cursor: true,

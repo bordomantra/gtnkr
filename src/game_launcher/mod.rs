@@ -88,6 +88,8 @@ impl GameLauncher {
                 Ok(result) => {
                     let (display_number, pid) = result;
 
+                    tracing::info!("DISPLAY NUMBER: {display_number}, PID: {pid}");
+
                     env::set_var("DISPLAY", format!(":{display_number}"));
 
                     Some(pid)
@@ -205,6 +207,8 @@ async fn extract_xwayland_display_from_gamescope_stderr(
         .await
         .map_err(SpawnGamescopeAndExtractXwaylandDisplayError::NextLine)?
     {
+        tracing::info!("{line}");
+
         if let Some(display_number) = extract_xwayland_display_from_string(&line) {
             return Ok(Some(display_number));
         }
@@ -216,6 +220,8 @@ async fn extract_xwayland_display_from_gamescope_stderr(
 async fn spawn_gamescope_and_extract_xwayland_display(
     gamescope_command: &str,
 ) -> Result<(u16, u32), SpawnGamescopeAndExtractXwaylandDisplayError> {
+    tracing::info!("Spawning gamescope with [{gamescope_command}]");
+
     let gamescope_process = Command::new("/bin/sh")
         .arg("-c")
         .arg(gamescope_command)

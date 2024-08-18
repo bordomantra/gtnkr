@@ -1,7 +1,12 @@
 use lazy_static::lazy_static;
 use regex::Regex;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use tokio::{io, process::Command};
+
+use hyprland::{
+    data::{Monitor as HyprlandMonitor, Monitors as HyprlandMonitors},
+    shared::{HyprData, HyprDataActive},
+};
 
 #[derive(Deserialize, Debug, PartialEq, Default)]
 pub enum ScreenResolution {
@@ -16,41 +21,27 @@ impl ScreenResolution {
             Self::Custom(width, height) => format!("-w {width} -h {height}"),
             Self::Native => match get_native_screen_resolution().await {
                 Err(error) => panic!("Failed to get the native screen resolution, see: {error:#?}"),
-                Ok(potential_screen_resolution) => {
-                    if let Some(screen_resolution) = potential_screen_resolution {
-                        let (width, height) = screen_resolution;
+                Ok(screen_resolution) => {
+                    let (width, height) = screen_resolution;
 
-                        return format!("-w {width} -h {height}");
-                    }
-
-                    panic!("Failed to get the native screen resolution, you can set it yourself in the game configuration file with ScreenResolution::Custom(WIDTH, HEIGHT)")
+                    format!("-w {width} -h {height}")
                 }
             },
         }
     }
 }
 
-async fn get_native_screen_resolution() -> Result<Option<(u16, u16)>, io::Error> {
-    let output = Command::new("/bin/xrandr").output().await?;
+#[derive(Deserialize, Debug)]
+struct Monitor {
+    width: u32,
+    height: u32,
+    focused: bool,
+}
 
-    let stdout_as_string = String::from_utf8_lossy(&output.stdout);
+async fn get_native_screen_resolution() -> hyprland::Result<(u16, u16)> {
+    let active_monitor_info = HyprlandMonitor::get_active()?;
 
-    lazy_static! {
-        static ref REGEX: Regex =
-            Regex::new(r"connected (\d+)x(\d+)").expect("Failed to compile the regex");
-    };
-
-    if let Some(captures) = &REGEX.captures(&stdout_as_string) {
-        if let (Some(width_string), Some(height_string)) = (captures.get(1), captures.get(2)) {
-            if let Ok(width) = width_string.as_str().parse::<u16>() {
-                if let Ok(height) = height_string.as_str().parse::<u16>() {
-                    return Ok(Some((width, height)));
-                }
-            }
-        }
-    }
-
-    Ok(None)
+    Ok((active_monitor_info.width, active_monitor_info.height))
 }
 
 #[cfg(test)]

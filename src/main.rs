@@ -6,6 +6,14 @@ use tracing_subscriber::FmtSubscriber;
 async fn main() -> color_eyre::Result<()> {
     color_eyre::install()?;
 
+    setup_debugging();
+
+    gtnkr::cli::run().await?;
+
+    Ok(())
+}
+
+fn setup_debugging() {
     let mut tracing_max_level = Level::INFO;
 
     if let Ok(debug) = env::var(format!("{}_DEBUG", env!("CARGO_PKG_NAME").to_uppercase())) {
@@ -20,8 +28,4 @@ async fn main() -> color_eyre::Result<()> {
 
     subscriber::set_global_default(subscriber)
         .expect("Failed to set the global default tracing subscriber");
-
-    gtnkr::cli::run().await?;
-
-    Ok(())
 }

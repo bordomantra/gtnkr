@@ -8,8 +8,8 @@ async fn main() -> color_eyre::Result<()> {
 
     let mut tracing_max_level = Level::INFO;
 
-    if let Ok(gtnkr_debug) = env::var("GTNKR_DEBUG") {
-        if gtnkr_debug == "1" {
+    if let Ok(debug) = env::var(format!("{}_DEBUG", env!("CARGO_PKG_NAME").to_uppercase())) {
+        if debug == "1" {
             tracing_max_level = Level::TRACE;
         }
     }

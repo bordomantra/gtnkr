@@ -1,3 +1,18 @@
+## Installing
+
+```bash
+# Clone the repository & compile it
+git clone https://github.com/bordomantra/gtnkr
+cd gtnkr
+cargo build --release
+
+# optionally you can copy/move it into ~/.cargo/bin/ so that the binary will be on your $PATH
+cp target/release/gtnkr ~/.cargo/bin/gtnkr
+
+# you can also delete the repository after that
+rm -rf ../gtnkr
+```
+
 ## Optional requirements
 
 I highly suggest you to install

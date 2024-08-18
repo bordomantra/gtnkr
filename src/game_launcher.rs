@@ -12,6 +12,9 @@ const MANGOHUD_PKG: &str = "[MangoHud](https://github.com/flightlessmango/MangoH
 const GAMESCOPE_EXECUTABLE_NAME: &str = "gamescope";
 const GAMESCOPE_PKG: &str = "[gamescope](https://github.com/ValveSoftware/gamescope)";
 
+const FPS_LIMIT_EXECUTABLE_NAME: &str = "strangle";
+const FPS_LIMIT_PKG: &str = "[libstrangle](https://github.com/milaq/libstrangle)";
+
 #[derive(Debug, thiserror::Error)]
 pub enum GameLauncherError {
     #[error("The path `{0}`, is not a valid executable path.")]
@@ -68,6 +71,14 @@ impl GameLauncher {
 
         let _ = find_executable(GAMESCOPE_EXECUTABLE_NAME, GAMESCOPE_PKG);
         launch_command.push(config.gamescope.as_command());
+
+        if config.fps_limit > 0 {
+            launch_command.push(format!(
+                "{} {}",
+                find_executable(FPS_LIMIT_EXECUTABLE_NAME, FPS_LIMIT_PKG),
+                config.fps_limit
+            ));
+        }
 
         if let Some(vulkan_driver) = config.vulkan_driver.as_command() {
             launch_command.push(vulkan_driver);

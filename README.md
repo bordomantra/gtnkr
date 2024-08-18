@@ -5,6 +5,7 @@ I highly suggest you to install
 - [MangoHud](https://github.com/flightlessmango/MangoHud) for Config::mangohud
 - [Hyprland](https://github.com/hyprwm/Hyprland) for Config::gamescope::source_resolution: SourceResolution::Native
 - [gamescope](https://github.com/ValveSoftware/gamescope) for Config::gamescope
+- [libstrangle](https://github.com/milaq/libstrangle) for Config::fps_limit
 
 ## Usage
 
@@ -25,6 +26,8 @@ Launch options: `gtnkr launch "%command% --use-d3d11"`
 
     // There's also Amdvlk but it doesn't work with Black Desert Online
     vulkan_driver: Radv,
+
+    fps_limit: 90,
     gamescope: (
 		// There's also Custom(width, height) which will work without Hyprland
         source_resolution: Native,

@@ -44,6 +44,11 @@ const fn _default_gamemode() -> bool {
 const fn _default_mangohud() -> bool {
     true
 }
+
+const fn _default_fps_limit() -> u32 {
+    0
+}
+
 const fn _default_environment_variables() -> Vec<(String, String)> {
     vec![]
 }
@@ -59,6 +64,9 @@ pub struct GameConfig {
     #[serde(default)]
     pub vulkan_driver: VulkanDriver,
 
+    #[serde(default = "_default_fps_limit")]
+    pub fps_limit: u32,
+
     #[serde(default)]
     pub gamescope: Gamescope,
 
@@ -72,6 +80,7 @@ impl Default for GameConfig {
             gamemode: _default_gamemode(),
             mangohud: _default_mangohud(),
             vulkan_driver: VulkanDriver::default(),
+            fps_limit: _default_fps_limit(),
             gamescope: Gamescope::default(),
             environment_variables: _default_environment_variables(),
         }

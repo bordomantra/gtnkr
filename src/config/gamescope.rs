@@ -17,10 +17,6 @@ const fn _default_tearing() -> bool {
     true
 }
 
-const fn _default_steam_overlay_fix() -> bool {
-    true
-}
-
 const fn _default_mangoapp() -> bool {
     true
 }
@@ -43,9 +39,6 @@ pub struct Gamescope {
     #[serde(default = "_default_tearing")]
     pub tearing: bool,
 
-    #[serde(default = "_default_steam_overlay_fix")]
-    pub steam_overlay_fix: bool,
-
     #[serde(default = "_default_mangoapp")]
     pub mangoapp: bool,
 
@@ -63,7 +56,6 @@ impl Default for Gamescope {
             start_as_fullscreen: _default_start_as_fullscreen(),
             force_grab_cursor: _default_force_grab_cursor(),
             tearing: _default_tearing(),
-            steam_overlay_fix: _default_steam_overlay_fix(),
             mangoapp: _default_mangoapp(),
             backend: GamescopeBackend::default(),
             expose_wayland: _default_expose_wayland(),

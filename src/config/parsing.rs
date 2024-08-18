@@ -41,7 +41,6 @@ mod tests {
             gamescope: (
                 source_resolution: Custom(1920, 1080),
                 start_as_fullscreen: true,
-                force_grab_cursor: false,
                 tearing: true,
             ),
             environment_variables: [

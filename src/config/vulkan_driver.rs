@@ -3,15 +3,17 @@ use serde::Deserialize;
 #[derive(Deserialize, Debug, PartialEq, Default)]
 pub enum VulkanDriver {
     #[default]
+    Default,
     Amdvlk,
     Radv,
 }
 
 impl VulkanDriver {
-    pub async fn as_command(&self) -> &str {
+    pub fn as_command(&self) -> Option<&str> {
         match self {
-            Self::Amdvlk => "/bin/vk_amdvlk",
-            Self::Radv => "/bin/vk_radv",
+            Self::Default => None,
+            Self::Amdvlk => Some("/bin/vk_amdvlk"),
+            Self::Radv => Some("/bin/vk_radv"),
         }
     }
 }

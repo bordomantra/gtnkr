@@ -3,8 +3,9 @@ use regex::Regex;
 use serde::Deserialize;
 use tokio::{io, process::Command};
 
-#[derive(Deserialize, Debug, PartialEq)]
+#[derive(Deserialize, Debug, PartialEq, Default)]
 pub enum ScreenResolution {
+    #[default]
     Native,
     Custom(u16, u16),
 }

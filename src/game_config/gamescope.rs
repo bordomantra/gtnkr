@@ -1,25 +1,44 @@
-use super::default_values::gamescope as gamescope_default_values;
 use super::ScreenResolution;
 use serde::Deserialize;
 use std::{collections::HashMap, env};
 
 const DEFAULT_GAMESCOPE_PATH: &str = "/bin/gamescope";
 
-#[derive(Deserialize)]
+const fn _default_source_resolution() -> ScreenResolution {
+    ScreenResolution::Native
+}
+
+const fn _default_start_as_fullscreen() -> bool {
+    true
+}
+
+const fn _default_force_grab_cursor() -> bool {
+    true
+}
+
+const fn _default_tearing() -> bool {
+    true
+}
+
+const fn _default_steam_overlay_fix() -> bool {
+    true
+}
+
+#[derive(Deserialize, Default)]
 pub struct Gamescope {
-    #[serde(default = "gamescope_default_values::source_resolution")]
+    #[serde(default = "_default_source_resolution")]
     pub source_resolution: ScreenResolution,
 
-    #[serde(default = "gamescope_default_values::start_as_fullscreen")]
+    #[serde(default = "_default_start_as_fullscreen")]
     pub start_as_fullscreen: bool,
 
-    #[serde(default = "gamescope_default_values::force_grab_cursor")]
+    #[serde(default = "_default_force_grab_cursor")]
     pub force_grab_cursor: bool,
 
-    #[serde(default = "gamescope_default_values::tearing")]
+    #[serde(default = "_default_tearing")]
     pub tearing: bool,
 
-    #[serde(default = "gamescope_default_values::steam_overlay_fix")]
+    #[serde(default = "_default_steam_overlay_fix")]
     pub steam_overlay_fix: bool,
 }
 

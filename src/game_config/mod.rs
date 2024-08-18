@@ -1,7 +1,6 @@
 #![allow(unused)]
 
 mod config_file;
-mod default_values;
 mod gamescope;
 mod parsing;
 mod screen_resolution;
@@ -10,6 +9,7 @@ mod vulkan_driver;
 pub use config_file::GameConfigFile;
 pub use gamescope::Gamescope;
 pub use screen_resolution::ScreenResolution;
+use serde::Deserialize;
 use std::path::PathBuf;
 use tokio::io;
 pub use vulkan_driver::VulkanDriver;
@@ -37,29 +37,42 @@ pub enum GameConfigError {
     UnexpectedIoError(io::Error),
 }
 
-use default_values::game as game_config_default_values;
-use serde::Deserialize;
+const fn _default_gamemode() -> bool {
+    true
+}
+const fn _default_mangohud() -> bool {
+    true
+}
+const fn _default_environment_variables() -> Vec<(String, String)> {
+    vec![]
+}
 
 #[derive(Deserialize)]
 pub struct GameConfig {
-    #[serde(default = "game_config_default_values::gamemode")]
+    #[serde(default = "_default_gamemode")]
     pub gamemode: bool,
 
-    #[serde(default = "game_config_default_values::mangohud")]
+    #[serde(default = "_default_mangohud")]
     pub mangohud: bool,
 
-    #[serde(default = "game_config_default_values::vulkan_driver")]
+    #[serde(default)]
     pub vulkan_driver: VulkanDriver,
 
-    #[serde(default = "game_config_default_values::gamescope")]
+    #[serde(default)]
     pub gamescope: Gamescope,
 
-    #[serde(default = "game_config_default_values::environment_variables")]
+    #[serde(default = "_default_environment_variables")]
     pub environment_variables: Vec<(String, String)>,
 }
 
 impl Default for GameConfig {
-    fn default() -> Self {
-        default_values::GAME
+    fn default() -> GameConfig {
+        Self {
+            gamemode: _default_gamemode(),
+            mangohud: _default_mangohud(),
+            vulkan_driver: VulkanDriver::default(),
+            gamescope: Gamescope::default(),
+            environment_variables: _default_environment_variables(),
+        }
     }
 }

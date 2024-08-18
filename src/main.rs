@@ -1,3 +1,4 @@
+use gtnkr::UPPERCASE_PACKAGE_NAME;
 use std::env;
 use tracing::{subscriber, Level};
 use tracing_subscriber::FmtSubscriber;
@@ -15,8 +16,9 @@ async fn main() -> color_eyre::Result<()> {
 
 fn setup_debugging() {
     let mut tracing_max_level = Level::INFO;
+    let debug_env_var_key = format!("{}_DEBUG", UPPERCASE_PACKAGE_NAME.as_str());
 
-    if let Ok(debug) = env::var(format!("{}_DEBUG", env!("CARGO_PKG_NAME").to_uppercase())) {
+    if let Ok(debug) = env::var(debug_env_var_key) {
         if debug == "1" {
             tracing_max_level = Level::TRACE;
         }

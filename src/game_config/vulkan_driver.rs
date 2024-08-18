@@ -1,7 +1,8 @@
 use serde::Deserialize;
 
-#[derive(Deserialize, Debug, PartialEq)]
+#[derive(Deserialize, Debug, PartialEq, Default)]
 pub enum VulkanDriver {
+    #[default]
     Amdvlk,
     Radv,
 }

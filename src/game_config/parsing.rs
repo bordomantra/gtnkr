@@ -27,6 +27,7 @@ impl GameConfig {
 #[cfg(test)]
 mod tests {
     use super::super::{config_file::GameConfigFile, GameConfig, ScreenResolution, VulkanDriver};
+    use crate::UPPERCASE_PACKAGE_NAME;
     use color_eyre::eyre;
     use lazy_static::lazy_static;
     use std::{env, path::Path};
@@ -51,7 +52,7 @@ mod tests {
 
     lazy_static! {
         static ref GAME_CONFIG_DIR_ENV_KEY: String =
-            format!("{}_GAME_CONFIG_DIR", env!("CARGO_PKG_NAME").to_uppercase());
+            format!("{}_GAME_CONFIG_DIR", UPPERCASE_PACKAGE_NAME.as_str());
     }
 
     #[tokio::test]

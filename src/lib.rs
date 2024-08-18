@@ -1,5 +1,5 @@
 pub mod cli;
-mod game_config;
+mod config;
 mod game_launcher;
 
 lazy_static::lazy_static! {

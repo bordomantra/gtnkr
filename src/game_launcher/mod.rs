@@ -104,6 +104,8 @@ impl GameLauncher {
 
         let launch_command_string = format!("{} {}", launch_command.join(" "), command);
 
+        tracing::info!("Launching the game with [{launch_command_string}]");
+
         Command::new("/bin/sh")
             .arg("-c")
             .arg(launch_command_string)

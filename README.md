@@ -14,10 +14,9 @@ Example config for Black Desert Online running on Arch Linux | Wayland (Hyprland
 	// https://github.com/FeralInteractive/gamemode is required
     vulkan_driver: Radv,
     gamescope: (
-
-        // https://gitlab.freedesktop.org/xorg/app/xrandr is required
-        // You can also set a custom resolution with Custom(HEIGHT, WIDTH)
-        source_resolution: Native,
+		// There's also Native, it requires https://gitlab.freedesktop.org/xorg/app/xrandr.
+		// It also might not work as intended if you've multiple monitors, maybe give it a shot.
+        source_resolution: Custom(1920, 1080),
         start_as_fullscreen: true,
         force_grab_cursor: true,
         tearing: true,

@@ -57,7 +57,10 @@ impl GameLauncher {
 
         launch_command.push(&gamescope_command);
 
-        launch_command.push(config.vulkan_driver.as_command().await);
+        if let Some(vulkan_driver) = config.vulkan_driver.as_command() {
+            launch_command.push(vulkan_driver);
+        }
+
 
         config
             .environment_variables

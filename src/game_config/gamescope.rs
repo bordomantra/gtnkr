@@ -1,4 +1,5 @@
 use super::ScreenResolution;
+use crate::UPPERCASE_PACKAGE_NAME;
 use serde::Deserialize;
 use std::{collections::HashMap, env};
 
@@ -64,9 +65,10 @@ impl Gamescope {
         }
 
         let gamescope_path = {
-            let application_name = env!("CARGO_PKG_NAME").to_uppercase();
-
-            if let Ok(path) = env::var(format!("{application_name}_GAMESCOPE_PATH")) {
+            if let Ok(path) = env::var(format!(
+                "{}_GAMESCOPE_PATH",
+                UPPERCASE_PACKAGE_NAME.as_str()
+            )) {
                 path
             } else {
                 String::from(DEFAULT_GAMESCOPE_PATH)

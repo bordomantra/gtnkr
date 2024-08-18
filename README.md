@@ -4,7 +4,7 @@ Example config for Black Desert Online:
 ```
 (
 	gamemode: true,
-    mangohud: true,
+	mangohud: true,
     vulkan_driver: Radv,
     gamescope: (
         source_resolution: Custom(1920, 1080),

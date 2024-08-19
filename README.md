@@ -4,7 +4,7 @@ Install [rust](https://github.com/rust-lang/rust) if you don't have it.
 
 For Arch:
 ```bash
-# pacman -S rust
+pacman -S rust
 ```
 
 Clone the repository and install it with rust's [cargo](https://github.com/rust-lang/cargo), it should come together with [rust](https://github.com/rust-lang/rust).

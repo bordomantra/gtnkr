@@ -7,7 +7,7 @@ For Arch:
 pacman -S rust
 ```
 
-Install it with rust's [cargo](https://github.com/rust-lang/cargo), it should come together with [rust](https://github.com/rust-lang/rust).
+Install gtnkr with rust's [cargo](https://github.com/rust-lang/cargo), which should come together with [rust](https://github.com/rust-lang/rust).
 ```bash
 cargo install --git https://github.com/bordomantra/gtnkr
 ```

@@ -7,10 +7,8 @@ For Arch:
 pacman -S rust
 ```
 
-Clone the repository and install it with rust's [cargo](https://github.com/rust-lang/cargo), it should come together with [rust](https://github.com/rust-lang/rust).
+Install it with rust's [cargo](https://github.com/rust-lang/cargo), it should come together with [rust](https://github.com/rust-lang/rust).
 ```bash
-git clone https://github.com/bordomantra/gtnkr
-
 cargo install --git https://github.com/bordomantra/gtnkr
 ```
 

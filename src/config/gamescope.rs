@@ -3,8 +3,6 @@ use crate::UPPERCASE_PACKAGE_NAME;
 use serde::Deserialize;
 use std::{collections::HashMap, env};
 
-const DEFAULT_GAMESCOPE_PATH: &str = "/bin/gamescope";
-
 const fn _default_start_as_fullscreen() -> bool {
     true
 }
@@ -82,11 +80,10 @@ impl GamescopeBackend {
 }
 
 impl Gamescope {
-    pub fn as_command(&self) -> String {
+    pub fn as_command(&self, gamescope_executable_path: &str) -> String {
         let mut arguments: Vec<&str> = Vec::new();
 
-        let screen_resolution_as_argument =
-            self.source_resolution.as_gamescope_command_argument();
+        let screen_resolution_as_argument = self.source_resolution.as_gamescope_command_argument();
 
         arguments.push(&screen_resolution_as_argument);
 
@@ -114,19 +111,8 @@ impl Gamescope {
 
         arguments.push(&backend_as_argument);
 
-        let gamescope_path = {
-            if let Ok(path) = env::var(format!(
-                "{}_GAMESCOPE_PATH",
-                UPPERCASE_PACKAGE_NAME.as_str()
-            )) {
-                path
-            } else {
-                String::from(DEFAULT_GAMESCOPE_PATH)
-            }
-        };
-
         let arguments_as_string = arguments.join(" ");
 
-        format!("{gamescope_path} {arguments_as_string}")
+        format!("{gamescope_executable_path} {arguments_as_string}")
     }
 }

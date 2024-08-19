@@ -1,19 +1,8 @@
-use crate::config::find_executable;
-use crate::config::{GameConfig, GameConfigError, GameConfigFile};
+use crate::config::{GameConfig, GameConfigError, GameConfigFile, ScreenResolution};
+use phf::phf_map;
 use std::{env, path::PathBuf};
 use tokio::{io, process::Command};
-
-const GAMEMODERUN_EXECUTABLE_NAME: &str = "gamemoderun";
-const GAMEMODERUN_PKG: &str = "[gamemode](https://github.com/FeralInteractive/gamemode)";
-
-const MANGOHUD_EXECUTABLE_NAME: &str = "mangohud";
-const MANGOHUD_PKG: &str = "[MangoHud](https://github.com/flightlessmango/MangoHud)";
-
-const GAMESCOPE_EXECUTABLE_NAME: &str = "gamescope";
-const GAMESCOPE_PKG: &str = "[gamescope](https://github.com/ValveSoftware/gamescope)";
-
-const FPS_LIMIT_EXECUTABLE_NAME: &str = "strangle";
-const FPS_LIMIT_PKG: &str = "[libstrangle](https://github.com/milaq/libstrangle)";
+use which::which;
 
 #[derive(Debug, thiserror::Error)]
 pub enum GameLauncherError {
@@ -28,6 +17,9 @@ pub enum GameLauncherError {
 
     #[error(transparent)]
     ParseConfigFile(GameConfigError),
+
+    #[error(r#"Failed to locate the cli tool "{0}", do you have {1} installed?"#)]
+    MissingCliTool(String, String),
 
     #[error("Failed to run the launch or gamescope command, see: {0:#?}")]
     RunCommand(io::Error),
@@ -59,29 +51,35 @@ impl GameLauncher {
         let mut launch_command: Vec<String> = Vec::new();
 
         if config.gamemode {
-            launch_command.push(find_executable(
-                GAMEMODERUN_EXECUTABLE_NAME,
-                GAMEMODERUN_PKG,
-            ));
+            launch_command.push(find_executable_gml("gamemoderun")?);
         }
 
         if config.mangohud {
-            launch_command.push(find_executable(MANGOHUD_EXECUTABLE_NAME, MANGOHUD_PKG));
+            launch_command.push(find_executable_gml("mangohud")?);
         }
 
-        let _ = find_executable(GAMESCOPE_EXECUTABLE_NAME, GAMESCOPE_PKG);
-        launch_command.push(config.gamescope.as_command());
+        if let Some(gamescope_config) = config.gamescope {
+            if let Ok(gamescope_path) = env::var(format!(
+                "{}_GAMESCOPE_PATH",
+                crate::UPPERCASE_PACKAGE_NAME.as_str()
+            )) {
+                launch_command.push(gamescope_config.as_command(&gamescope_path));
+            } else {
+                launch_command
+                    .push(gamescope_config.as_command(&find_executable_gml("gamescope")?));
+            }
+        }
 
         if config.fps_limit > 0 {
             launch_command.push(format!(
                 "{} {}",
-                find_executable(FPS_LIMIT_EXECUTABLE_NAME, FPS_LIMIT_PKG),
+                find_executable_gml("strangle")?,
                 config.fps_limit
             ));
         }
 
         if let Some(vulkan_driver) = config.vulkan_driver.as_command() {
-            launch_command.push(vulkan_driver);
+            launch_command.push(find_executable_gml(vulkan_driver)?);
         }
 
         config
@@ -126,4 +124,34 @@ impl GameLauncher {
             executable_path.to_path_buf(),
         ))
     }
+}
+
+static CLI_TOOL_INFO: phf::Map<&'static str, &'static str> = phf_map! {
+    "gamemoderun" => "[gamemode](https://github.com/FeralInteractive/gamemode)",
+    "mangohud" => "[MangoHud](https://github.com/flightlessmango/MangoHud)",
+    "gamescope" => "[gamescope](https://github.com/ValveSoftware/gamescope)",
+    "libstrangle" => "[libstrangle](https://github.com/milaq/libstrangle)",
+
+    "vk_amdvlk" => "[amd-vulkan-prefixes](https://gitlab.com/AndrewShark/amd-vulkan-prefixes)",
+    "vk_radv" => "[amd-vulkan-prefixes](https://gitlab.com/AndrewShark/amd-vulkan-prefixes)",
+};
+
+fn find_executable_gml(name: &str) -> Result<String, GameLauncherError> {
+    if let Ok(executable_path) =
+        which(name).map(|executable| executable.to_string_lossy().to_string())
+    {
+        return Ok(executable_path);
+    }
+
+    if let Some(pkg_name) = CLI_TOOL_INFO.get(name) {
+        return Err(GameLauncherError::MissingCliTool(
+            name.to_string(),
+            pkg_name.to_string(),
+        ));
+    }
+
+    Err(GameLauncherError::MissingCliTool(
+        name.to_string(),
+        String::from("<[Undefined, please create an issue]>"),
+    ))
 }

@@ -13,7 +13,6 @@ use serde::Deserialize;
 use std::path::PathBuf;
 use tokio::io;
 pub use vulkan_driver::VulkanDriver;
-use which::which;
 
 #[derive(Debug, thiserror::Error)]
 pub enum GameConfigError {
@@ -68,7 +67,7 @@ pub struct GameConfig {
     pub fps_limit: u32,
 
     #[serde(default)]
-    pub gamescope: Gamescope,
+    pub gamescope: Option<Gamescope>,
 
     #[serde(default = "_default_environment_variables")]
     pub environment_variables: Vec<(String, String)>,
@@ -81,19 +80,8 @@ impl Default for GameConfig {
             mangohud: _default_mangohud(),
             vulkan_driver: VulkanDriver::default(),
             fps_limit: _default_fps_limit(),
-            gamescope: Gamescope::default(),
+            gamescope: Some(Gamescope::default()),
             environment_variables: _default_environment_variables(),
-        }
-    }
-}
-
-pub fn find_executable(name: &str, package_to_install: &str) -> String {
-    match which(name) {
-        Err(error) => panic!("Failed to find the {name} executable, do you have {package_to_install} installed? See: {error:#?}"),
-        Ok(executable_path) => {
-            let executable_path_string = executable_path.to_string_lossy().to_string();
-
-            executable_path_string
         }
     }
 }

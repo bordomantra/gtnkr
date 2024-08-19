@@ -11,7 +11,7 @@ Clone the repository and install it with rust's [cargo](https://github.com/rust-
 ```bash
 git clone https://github.com/bordomantra/gtnkr
 
-cargo install --path ./gtnkr
+cargo install --git https://github.com/bordomantra/gtnkr
 ```
 
 ## Optional requirements

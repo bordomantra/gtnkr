@@ -42,7 +42,7 @@ Launch options: `gtnkr launch "%command% --use-d3d11"`
     vulkan_driver: Radv,
 
     fps_limit: 90,
-    gamescope: (
+    gamescope: Some((
 		// There's also Custom(width, height) which will work without Hyprland
         source_resolution: Native,
 
@@ -56,7 +56,7 @@ Launch options: `gtnkr launch "%command% --use-d3d11"`
 
         // Should be true if the backend is Wayland, strangely this causes an error on my system.
         expose_wayland: false,
-    ),
+    )),
 
     environment_variables: [
         ("MESA_VK_WSI_PRESENT_MODE", "immediate"),

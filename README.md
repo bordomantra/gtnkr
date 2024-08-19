@@ -1,17 +1,17 @@
-## Installing
+## Installation
 
+Install [rust](https://github.com/rust-lang/rust) if you don't have it.
+
+For Arch:
 ```bash
-# Clone the repository & compile it
-git clone https://github.com/bordomantra/gtnkr
-cd gtnkr
-cargo build --release
-
-# optionally you can copy/move it into ~/.cargo/bin/ so that the binary will be on your $PATH
-cp target/release/gtnkr ~/.cargo/bin/gtnkr
-
-# you can also delete the repository after that
-rm -rf ../gtnkr
+# pacman -S rust
 ```
+
+Clone the repository and install it with rust's [cargo](https://github.com/rust-lang/cargo), it should come together with [rust](https://github.com/rust-lang/rust).
+```bash
+git clone https://github.com/bordomantra/gtnkr
+
+cargo install --path ./gtnkr
 
 ## Optional requirements
 

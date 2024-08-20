@@ -1,5 +1,10 @@
-use crate::config::{GameConfig, GameConfigError, GameConfigFile, ScreenResolution};
+mod logs;
+
+use crate::config::{GameConfig, GameConfigError, GameConfigFile};
+use crate::process_output_log::{ProcessOutputLog, ProcessOutputLogKind};
+use logs::ActiveLaunchLog;
 use phf::phf_map;
+use std::process::Stdio;
 use std::{env, path::PathBuf};
 use tokio::{io, process::Command};
 use which::which;
@@ -31,6 +36,7 @@ impl GameLauncher {
     pub async fn launch_by_command(
         command: &str,
         config_file_name: &str,
+        game_identifier: &str,
     ) -> Result<(), GameLauncherError> {
         let config_file = GameConfigFile::from_filename(config_file_name)
             .await
@@ -91,17 +97,28 @@ impl GameLauncher {
 
         tracing::info!("Launching the game with [{launch_command_string}]");
 
-        Command::new("sh")
+        let stderr_runtime_log_file =
+            ActiveLaunchLog::create(game_identifier, ProcessOutputLogKind::Stderr)
+                .unwrap()
+                .as_output_file()
+                .unwrap();
+
+        let mut process = Command::new("sh")
             .arg("-c")
             .arg(launch_command_string)
-            .output()
-            .await
+            .stderr(Stdio::from(stderr_runtime_log_file))
+            .spawn()
             .map_err(GameLauncherError::RunCommand)?;
+
+        let _ = process.wait().await;
 
         Ok(())
     }
 
-    pub async fn launch_by_executable(executable: &str) -> Result<(), GameLauncherError> {
+    pub async fn launch_by_executable(
+        executable: &str,
+        game_identifier: &str,
+    ) -> Result<(), GameLauncherError> {
         let executable_path =
             which::which(executable).map_err(GameLauncherError::ResolveExecutablePath)?;
 
@@ -113,6 +130,7 @@ impl GameLauncher {
                 Self::launch_by_command(
                     executable_path_as_string,
                     &format!("{executable_file_name}.ron"),
+                    game_identifier,
                 )
                 .await?;
 

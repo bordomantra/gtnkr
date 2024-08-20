@@ -1,4 +1,4 @@
-use gtnkr::UPPERCASE_PACKAGE_NAME;
+use gtnkr::{process_output_log::RUNTIME_PROCESS_OUTPUT_LOG_DIRECTORY, UPPERCASE_PACKAGE_NAME};
 use std::env;
 use tracing::{subscriber, Level};
 use tracing_subscriber::FmtSubscriber;
@@ -11,7 +11,14 @@ async fn main() -> color_eyre::Result<()> {
 
     gtnkr::cli::run().await?;
 
+    cleanup_runtime_dir();
+
     Ok(())
+}
+
+fn cleanup_runtime_dir() {
+    std::fs::remove_dir_all(RUNTIME_PROCESS_OUTPUT_LOG_DIRECTORY.as_path())
+        .expect("Should've been able to delete the RUNTIME_PROCESS_OUTPUT_LOG_DIRECTORY directory");
 }
 
 fn setup_debugging() {

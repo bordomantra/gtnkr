@@ -59,10 +59,15 @@ pub async fn run() -> Result<(), GameLauncherError> {
     match &commands.subcommand {
         SubCommands::Launch { game } => match game {
             GameArgument::Executable(path_string) => {
-                GameLauncher::launch_by_executable(path_string).await
+                GameLauncher::launch_by_executable(path_string, "no_identifier").await
             }
             GameArgument::SteamLaunchCommand(command, steam_app_id) => {
-                GameLauncher::launch_by_command(command, &format!("{steam_app_id}.ron")).await
+                GameLauncher::launch_by_command(
+                    command,
+                    &format!("{steam_app_id}.ron"),
+                    &steam_app_id.to_string(),
+                )
+                .await
             }
         },
     }

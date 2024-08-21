@@ -97,50 +97,21 @@ impl GameLauncher {
 
         tracing::info!("Launching the game with [{launch_command_string}]");
 
-        let stderr_runtime_log_file =
-            ActiveLaunchLog::create(game_identifier, ProcessOutputLogKind::Stderr)
-                .unwrap()
-                .as_output_file()
-                .unwrap();
+        let logged_stderr = ActiveLaunchLog::create(game_identifier, ProcessOutputLogKind::Stderr)
+            .unwrap()
+            .as_stdio()
+            .unwrap();
 
         let mut process = Command::new("sh")
             .arg("-c")
             .arg(launch_command_string)
-            .stderr(Stdio::from(stderr_runtime_log_file))
+            .stderr(logged_stderr)
             .spawn()
             .map_err(GameLauncherError::RunCommand)?;
 
         let _ = process.wait().await;
 
         Ok(())
-    }
-
-    pub async fn launch_by_executable(
-        executable: &str,
-        game_identifier: &str,
-    ) -> Result<(), GameLauncherError> {
-        let executable_path =
-            which::which(executable).map_err(GameLauncherError::ResolveExecutablePath)?;
-
-        if let Some(executable_file_name) = executable_path
-            .file_name()
-            .and_then(|file_name| file_name.to_str())
-        {
-            if let Some(executable_path_as_string) = executable_path.to_str() {
-                Self::launch_by_command(
-                    executable_path_as_string,
-                    &format!("{executable_file_name}.ron"),
-                    game_identifier,
-                )
-                .await?;
-
-                return Ok(());
-            }
-        }
-
-        Err(GameLauncherError::InvalidExecutablePath(
-            executable_path.to_path_buf(),
-        ))
     }
 }
 

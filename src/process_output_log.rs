@@ -1,7 +1,6 @@
 use crate::LOWERCASE_PACKAGE_NAME;
-use chrono::NaiveDateTime;
 use nix::unistd::getuid;
-use std::{fs::File, io::Error as IoError, path::PathBuf};
+use std::{fs::File, io::Error as IoError, path::PathBuf, process::Stdio};
 
 pub const READABLE_TIMESTAMP_FORMAT: &str = "%Y-%m-%d_%H:%M:%S";
 
@@ -35,10 +34,7 @@ pub trait ProcessOutputLog {
     where
         Self: std::marker::Sized;
 
-    fn get(identifier: &str, timestamp: &NaiveDateTime, kind: ProcessOutputLogKind) -> Option<Self>
-    where
-        Self: std::marker::Sized;
-
     fn as_path(&self) -> PathBuf;
     fn as_output_file(&self) -> Result<File, IoError>;
+    fn as_stdio(&self) -> Result<Stdio, IoError>;
 }

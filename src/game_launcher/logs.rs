@@ -7,6 +7,7 @@ use std::fs;
 use std::fs::File;
 use std::io::Error as IoError;
 use std::path::PathBuf;
+use std::process::Stdio;
 
 pub struct ActiveLaunchLog {
     game_identifier: String,
@@ -37,30 +38,16 @@ impl ProcessOutputLog for ActiveLaunchLog {
         Ok(process_output_log)
     }
 
-    fn get(
-        game_identifier: &str,
-        timestamp: &NaiveDateTime,
-        kind: ProcessOutputLogKind,
-    ) -> Option<Self> {
-        let process_output_log = Self {
-            game_identifier: game_identifier.to_owned(),
-            timestamp: timestamp.to_owned(),
-            kind,
-        };
-
-        let log_file_path = process_output_log.as_path();
-
-        if log_file_path.is_file() {
-            return Some(process_output_log);
-        }
-
-        None
-    }
-
     fn as_output_file(&self) -> Result<File, IoError> {
         let file_path = self.as_path();
 
         File::create(file_path)
+    }
+
+    fn as_stdio(&self) -> Result<Stdio, IoError> {
+        let log_file = self.as_output_file()?;
+
+        Ok(Stdio::from(log_file))
     }
 
     fn as_path(&self) -> PathBuf {

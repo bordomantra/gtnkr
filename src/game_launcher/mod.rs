@@ -1,10 +1,6 @@
-mod logs;
-
 use crate::config::{GameConfig, GameConfigError, GameConfigFile};
-use crate::process_output_log::{ProcessOutputLog, ProcessOutputLogKind};
-use logs::ActiveLaunchLog;
+use crate::process_output_log::{ActiveLog, ProcessOutputLog, ProcessOutputLogKind};
 use phf::phf_map;
-use std::process::Stdio;
 use std::{env, path::PathBuf};
 use tokio::{io, process::Command};
 use which::which;
@@ -97,7 +93,7 @@ impl GameLauncher {
 
         tracing::info!("Launching the game with [{launch_command_string}]");
 
-        let logged_stderr = ActiveLaunchLog::create(game_identifier, ProcessOutputLogKind::Stderr)
+        let logged_stderr = ActiveLog::create(game_identifier, ProcessOutputLogKind::Stderr)
             .unwrap()
             .as_stdio()
             .unwrap();

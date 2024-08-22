@@ -47,7 +47,9 @@ impl GameConfigFile {
             }
         };
 
-        let config_file_path = config_dir_path.join(filename);
+        let mut config_file_path = config_dir_path.join(filename);
+
+        config_file_path.set_extension("ron");
 
         if config_file_path.is_file() {
             return Ok(Some(GameConfigFile {

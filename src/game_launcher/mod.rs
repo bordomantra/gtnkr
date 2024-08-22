@@ -1,4 +1,8 @@
-use crate::config::{GameConfig, GameConfigError, GameConfigFile, ScreenResolution};
+use crate::config::{GameConfig, GameConfigError, GameConfigFile};
+use crate::process_output_log::{
+    ActiveOutputLog, PersistentOutputLog, ProcessOutputLog, ProcessOutputLogError,
+    ProcessOutputLogKind,
+};
 use phf::phf_map;
 use std::{env, path::PathBuf};
 use tokio::{io, process::Command};
@@ -23,6 +27,9 @@ pub enum GameLauncherError {
 
     #[error("Failed to run the launch or gamescope command, see: {0:#?}")]
     RunCommand(io::Error),
+
+    #[error(transparent)]
+    ProcessOutputLog(ProcessOutputLogError),
 }
 
 pub struct GameLauncher {}
@@ -30,9 +37,10 @@ pub struct GameLauncher {}
 impl GameLauncher {
     pub async fn launch_by_command(
         command: &str,
-        config_file_name: &str,
+        game_identifier: &str,
+        persistent_output_log: bool,
     ) -> Result<(), GameLauncherError> {
-        let config_file = GameConfigFile::from_filename(config_file_name)
+        let config_file = GameConfigFile::from_filename(game_identifier)
             .await
             .map_err(GameLauncherError::FindConfigFile)?;
 
@@ -42,7 +50,7 @@ impl GameLauncher {
                     .await
                     .map_err(GameLauncherError::ParseConfigFile)?
             } else {
-                tracing::warn!("Game config file with the name `{config_file_name}` doesn't exist, using the defaults.");
+                tracing::warn!("Game config file with the name `{game_identifier}` doesn't exist, using the defaults.");
 
                 GameConfig::default()
             }
@@ -91,38 +99,29 @@ impl GameLauncher {
 
         tracing::info!("Launching the game with [{launch_command_string}]");
 
-        Command::new("sh")
+        let active_stderr_output_log =
+            ActiveOutputLog::create(game_identifier, ProcessOutputLogKind::Stderr)
+                .map_err(GameLauncherError::ProcessOutputLog)?;
+
+        let mut process = Command::new("sh")
             .arg("-c")
             .arg(launch_command_string)
-            .output()
-            .await
+            .stderr(
+                active_stderr_output_log
+                    .as_stdio()
+                    .map_err(GameLauncherError::ProcessOutputLog)?,
+            )
+            .spawn()
             .map_err(GameLauncherError::RunCommand)?;
 
-        Ok(())
-    }
+        let _ = process.wait().await;
 
-    pub async fn launch_by_executable(executable: &str) -> Result<(), GameLauncherError> {
-        let executable_path =
-            which::which(executable).map_err(GameLauncherError::ResolveExecutablePath)?;
-
-        if let Some(executable_file_name) = executable_path
-            .file_name()
-            .and_then(|file_name| file_name.to_str())
-        {
-            if let Some(executable_path_as_string) = executable_path.to_str() {
-                Self::launch_by_command(
-                    executable_path_as_string,
-                    &format!("{executable_file_name}.ron"),
-                )
-                .await?;
-
-                return Ok(());
-            }
+        if persistent_output_log {
+            PersistentOutputLog::from_active_output_log(active_stderr_output_log)
+                .map_err(GameLauncherError::ProcessOutputLog)?;
         }
 
-        Err(GameLauncherError::InvalidExecutablePath(
-            executable_path.to_path_buf(),
-        ))
+        Ok(())
     }
 }
 

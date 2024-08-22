@@ -23,12 +23,14 @@ I highly suggest you to install
 
 ## Usage
 
+Firstly, take a look at `gtnkr launch --help`.
+
 Put this into Game Settings > General > Launch Options
-`gtnkr launch "%command%"`
+`gtnkr launch -s "%command%" --log-output`
 
 Example config for Black Desert Online (SteamAppID: 582660) running on Arch Linux | Wayland (Hyprland):
 
-Launch options: `gtnkr launch "%command% --use-d3d11"`
+Launch options: `gtnkr launch -s "%command% --use-d3d11" -l`
 
 `~/.config/gtnkr/game_configs/582660.ron`
 ```ron

@@ -1,8 +1,13 @@
 use crate::LOWERCASE_PACKAGE_NAME;
 use chrono::{Local, NaiveDateTime};
 use nix::unistd::{getuid, User};
-
-use std::{fs, fs::File, io::Error as IoError, path::PathBuf, process::Stdio};
+use std::{
+    fs,
+    fs::{copy, File},
+    io::Error as IoError,
+    path::PathBuf,
+    process::Stdio,
+};
 
 pub const READABLE_TIMESTAMP_FORMAT: &str = "%Y-%m-%d_%H:%M:%S";
 
@@ -39,14 +44,36 @@ impl ProcessOutputLogKind {
     }
 }
 
+#[derive(Debug, thiserror::Error)]
+pub enum ProcessOutputLogError {
+    #[error("IO error while attempting to create the unique log directory `{1:#?}`, see: {0:#?}`")]
+    CreateUniqueLogDirectory(IoError, PathBuf),
+
+    #[error("IO error while attempting to create the output log `{1:#?}`, see: {0:#?}")]
+    CreateOutputLogFile(IoError, PathBuf),
+
+    #[error(
+        "IO error while attempting to create a Stdio from the output log `{1:#?}`, see: {0:#?}"
+    )]
+    CreateStdioFromOutputLog(IoError, PathBuf),
+
+    #[error("IO error while attempting to copy the contents of the runtime output log `{1:#?}` to the persistent output log `{2:#?}`, see: {0:#?}")]
+    CopyRuntimeToPersistent(IoError, PathBuf, PathBuf),
+}
+
+type ProcessOutputLogResult<T> = Result<T, ProcessOutputLogError>;
+
 pub trait ProcessOutputLog {
-    fn create<S: ToString>(identifier: S, kind: ProcessOutputLogKind) -> Result<Self, IoError>
+    fn create<S: ToString>(
+        identifier: S,
+        kind: ProcessOutputLogKind,
+    ) -> ProcessOutputLogResult<Self>
     where
         Self: std::marker::Sized;
 
     fn as_path(&self) -> PathBuf;
-    fn as_output_file(&self) -> Result<File, IoError>;
-    fn as_stdio(&self) -> Result<Stdio, IoError>;
+    fn as_output_file(&self) -> ProcessOutputLogResult<File>;
+    fn as_stdio(&self) -> ProcessOutputLogResult<Stdio>;
 }
 
 pub fn create_output_log_file(
@@ -54,17 +81,20 @@ pub fn create_output_log_file(
     timestamp: &NaiveDateTime,
     kind: &ProcessOutputLogKind,
     base_log_directory: PathBuf,
-) -> Result<File, IoError> {
+) -> Result<File, ProcessOutputLogError> {
     let log_file_path =
         generate_output_log_file_path(identifier, timestamp, kind, base_log_directory);
 
-    fs::create_dir_all(
-        log_file_path
-            .parent()
-            .expect("output_log_file_path should've had a parent directory."),
-    )?;
+    let log_file_path_parent = log_file_path
+        .parent()
+        .expect("output_log_file_path should've had a parent directory.");
 
-    File::create(log_file_path)
+    fs::create_dir_all(log_file_path_parent).map_err(|error| {
+        ProcessOutputLogError::CreateUniqueLogDirectory(error, log_file_path_parent.to_path_buf())
+    })?;
+
+    File::create(&log_file_path)
+        .map_err(|error| ProcessOutputLogError::CreateOutputLogFile(error, log_file_path))
 }
 
 pub fn generate_output_log_file_path(
@@ -83,13 +113,18 @@ pub fn generate_output_log_file_path(
     ))
 }
 
-pub fn as_output_file<L: ProcessOutputLog>(process_output_log: &L) -> Result<File, IoError> {
-    let file_path = process_output_log.as_path();
+pub fn as_output_file<L: ProcessOutputLog>(
+    process_output_log: &L,
+) -> Result<File, ProcessOutputLogError> {
+    let output_file_path = process_output_log.as_path();
 
-    File::create(file_path)
+    File::create(output_file_path.clone())
+        .map_err(|error| ProcessOutputLogError::CreateOutputLogFile(error, output_file_path))
 }
 
-pub fn as_stdio<L: ProcessOutputLog>(process_output_log: &L) -> Result<Stdio, IoError> {
+pub fn as_stdio<L: ProcessOutputLog>(
+    process_output_log: &L,
+) -> Result<Stdio, ProcessOutputLogError> {
     let log_file = process_output_log.as_output_file()?;
 
     Ok(Stdio::from(log_file))
@@ -112,15 +147,18 @@ pub fn create(
     (identifier, current_timestamp, kind, base_log_directory_path)
 }
 
-pub struct ActiveLog {
+pub struct ActiveOutputLog {
     identifier: String,
     timestamp: NaiveDateTime,
     kind: ProcessOutputLogKind,
     base_log_directory_path: PathBuf,
 }
 
-impl ProcessOutputLog for ActiveLog {
-    fn create<S: ToString>(identifier: S, kind: ProcessOutputLogKind) -> Result<Self, IoError> {
+impl ProcessOutputLog for ActiveOutputLog {
+    fn create<S: ToString>(
+        identifier: S,
+        kind: ProcessOutputLogKind,
+    ) -> ProcessOutputLogResult<Self> {
         let (identifier, timestamp, kind, base_log_directory_path) = create(
             identifier.to_string(),
             kind,
@@ -135,11 +173,11 @@ impl ProcessOutputLog for ActiveLog {
         })
     }
 
-    fn as_output_file(&self) -> Result<File, IoError> {
+    fn as_output_file(&self) -> ProcessOutputLogResult<File> {
         as_output_file(self)
     }
 
-    fn as_stdio(&self) -> Result<Stdio, IoError> {
+    fn as_stdio(&self) -> ProcessOutputLogResult<Stdio> {
         as_stdio(self)
     }
 
@@ -153,15 +191,18 @@ impl ProcessOutputLog for ActiveLog {
     }
 }
 
-pub struct PersistentLog {
+pub struct PersistentOutputLog {
     identifier: String,
     timestamp: NaiveDateTime,
     kind: ProcessOutputLogKind,
     base_log_directory_path: PathBuf,
 }
 
-impl ProcessOutputLog for PersistentLog {
-    fn create<S: ToString>(identifier: S, kind: ProcessOutputLogKind) -> Result<Self, IoError> {
+impl ProcessOutputLog for PersistentOutputLog {
+    fn create<S: ToString>(
+        identifier: S,
+        kind: ProcessOutputLogKind,
+    ) -> ProcessOutputLogResult<Self> {
         let (identifier, timestamp, kind, base_log_directory_path) = create(
             identifier.to_string(),
             kind,
@@ -176,11 +217,11 @@ impl ProcessOutputLog for PersistentLog {
         })
     }
 
-    fn as_output_file(&self) -> Result<File, IoError> {
+    fn as_output_file(&self) -> ProcessOutputLogResult<File> {
         as_output_file(self)
     }
 
-    fn as_stdio(&self) -> Result<Stdio, IoError> {
+    fn as_stdio(&self) -> ProcessOutputLogResult<Stdio> {
         as_stdio(self)
     }
 
@@ -191,5 +232,23 @@ impl ProcessOutputLog for PersistentLog {
             &self.kind,
             self.base_log_directory_path.clone(),
         )
+    }
+}
+
+impl PersistentOutputLog {
+    pub fn from_active_output_log(active_log: ActiveOutputLog) -> ProcessOutputLogResult<Self> {
+        let active_file_path = active_log.as_path();
+        let persistent_log = PersistentOutputLog::create(active_log.identifier, active_log.kind)?;
+        let persistent_file_path = persistent_log.as_path();
+
+        copy(&active_file_path, &persistent_file_path).map_err(|error| {
+            ProcessOutputLogError::CopyRuntimeToPersistent(
+                error,
+                active_file_path,
+                persistent_file_path,
+            )
+        })?;
+
+        Ok(persistent_log)
     }
 }

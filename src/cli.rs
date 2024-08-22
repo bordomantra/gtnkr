@@ -13,17 +13,15 @@ struct Cli {
 #[derive(Subcommand)]
 enum SubCommands {
     Launch {
-        #[arg(value_parser = launch_subcommand_parser)]
-        game: GameArgument,
+        #[arg(value_parser = launch_subcommand_parser, long, short, env = "STEAM_LAUNCH_CMD")]
+        steam_launch_command: (String, u32),
+
+        #[arg(long, short, env = "LOG_LAUNCH_CMD_OUTPUT")]
+        log_output: bool,
     },
 }
 
-#[derive(Clone)]
-enum GameArgument {
-    SteamLaunchCommand(String, u32),
-}
-
-fn launch_subcommand_parser(string: &str) -> Result<GameArgument, String> {
+fn launch_subcommand_parser(string: &str) -> Result<(String, u32), String> {
     // TODO: This regex could be improved, it's very easy to trick it.
     let steam_command_regex =
         Regex::new(r#"SteamLaunch AppId=(\d+)"#).expect("Failed to compile the regex");
@@ -33,10 +31,7 @@ fn launch_subcommand_parser(string: &str) -> Result<GameArgument, String> {
             .get(1)
             .and_then(|r#match| r#match.as_str().parse::<u32>().ok())
     }) {
-        return Ok(GameArgument::SteamLaunchCommand(
-            string.to_string(),
-            steam_app_id,
-        ));
+        return Ok((string.to_string(), steam_app_id));
     }
 
     Err(String::from(
@@ -48,15 +43,14 @@ pub async fn run() -> Result<(), GameLauncherError> {
     let commands = Cli::parse();
 
     match &commands.subcommand {
-        SubCommands::Launch { game } => match game {
-            GameArgument::SteamLaunchCommand(command, steam_app_id) => {
-                GameLauncher::launch_by_command(
-                    command,
-                    &format!("{steam_app_id}.ron"),
-                    &steam_app_id.to_string(),
-                )
+        SubCommands::Launch {
+            steam_launch_command,
+            log_output,
+        } => {
+            let (launch_command, steam_app_id) = steam_launch_command;
+
+            GameLauncher::launch_by_command(launch_command, &steam_app_id.to_string(), *log_output)
                 .await
-            }
-        },
+        }
     }
 }

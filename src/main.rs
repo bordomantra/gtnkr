@@ -17,8 +17,7 @@ async fn main() -> color_eyre::Result<()> {
 }
 
 fn cleanup_runtime_dir() {
-    std::fs::remove_dir_all(RUNTIME_PROCESS_OUTPUT_LOG_DIRECTORY.as_path())
-        .expect("Should've been able to delete the RUNTIME_PROCESS_OUTPUT_LOG_DIRECTORY directory");
+    let _ = std::fs::remove_dir_all(RUNTIME_PROCESS_OUTPUT_LOG_DIRECTORY.as_path());
 }
 
 fn setup_debugging() {

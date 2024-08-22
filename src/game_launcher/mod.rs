@@ -1,5 +1,8 @@
 use crate::config::{GameConfig, GameConfigError, GameConfigFile};
-use crate::process_output_log::{ActiveLog, ProcessOutputLog, ProcessOutputLogKind};
+use crate::process_output_log::{
+    ActiveOutputLog, PersistentOutputLog, ProcessOutputLog, ProcessOutputLogError,
+    ProcessOutputLogKind,
+};
 use phf::phf_map;
 use std::{env, path::PathBuf};
 use tokio::{io, process::Command};
@@ -24,6 +27,9 @@ pub enum GameLauncherError {
 
     #[error("Failed to run the launch or gamescope command, see: {0:#?}")]
     RunCommand(io::Error),
+
+    #[error(transparent)]
+    ProcessOutputLog(ProcessOutputLogError),
 }
 
 pub struct GameLauncher {}
@@ -31,10 +37,10 @@ pub struct GameLauncher {}
 impl GameLauncher {
     pub async fn launch_by_command(
         command: &str,
-        config_file_name: &str,
         game_identifier: &str,
+        persistent_output_log: bool,
     ) -> Result<(), GameLauncherError> {
-        let config_file = GameConfigFile::from_filename(config_file_name)
+        let config_file = GameConfigFile::from_filename(game_identifier)
             .await
             .map_err(GameLauncherError::FindConfigFile)?;
 
@@ -44,7 +50,7 @@ impl GameLauncher {
                     .await
                     .map_err(GameLauncherError::ParseConfigFile)?
             } else {
-                tracing::warn!("Game config file with the name `{config_file_name}` doesn't exist, using the defaults.");
+                tracing::warn!("Game config file with the name `{game_identifier}` doesn't exist, using the defaults.");
 
                 GameConfig::default()
             }
@@ -93,19 +99,27 @@ impl GameLauncher {
 
         tracing::info!("Launching the game with [{launch_command_string}]");
 
-        let logged_stderr = ActiveLog::create(game_identifier, ProcessOutputLogKind::Stderr)
-            .unwrap()
-            .as_stdio()
-            .unwrap();
+        let active_stderr_output_log =
+            ActiveOutputLog::create(game_identifier, ProcessOutputLogKind::Stderr)
+                .map_err(GameLauncherError::ProcessOutputLog)?;
 
         let mut process = Command::new("sh")
             .arg("-c")
             .arg(launch_command_string)
-            .stderr(logged_stderr)
+            .stderr(
+                active_stderr_output_log
+                    .as_stdio()
+                    .map_err(GameLauncherError::ProcessOutputLog)?,
+            )
             .spawn()
             .map_err(GameLauncherError::RunCommand)?;
 
         let _ = process.wait().await;
+
+        if persistent_output_log {
+            PersistentOutputLog::from_active_output_log(active_stderr_output_log)
+                .map_err(GameLauncherError::ProcessOutputLog)?;
+        }
 
         Ok(())
     }

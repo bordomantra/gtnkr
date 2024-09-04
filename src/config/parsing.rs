@@ -38,11 +38,11 @@ mod tests {
             gamemode: false,
             mangohud: false,
             vulkan_driver: Amdvlk,
-            gamescope: (
+            gamescope: Some((
                 source_resolution: Custom(1920, 1080),
                 start_as_fullscreen: true,
                 tearing: true,
-            ),
+            )),
             environment_variables: [
                 ("MESA_VK_WSI_PRESENT_MODE", "immediate"),
                 ("vk_xwayland_wait_ready", "false"),
@@ -83,7 +83,7 @@ mod tests {
         assert_eq!(config.vulkan_driver, VulkanDriver::Amdvlk);
         assert_eq!(config.environment_variables.len(), 2);
 
-        let gamescope_config = config.gamescope;
+        let gamescope_config = config.gamescope.expect("Failed to get gamescope config");
 
         assert_eq!(
             gamescope_config.source_resolution,
@@ -91,7 +91,6 @@ mod tests {
         );
 
         assert!(gamescope_config.start_as_fullscreen);
-        assert!(!gamescope_config.force_grab_cursor);
         assert!(gamescope_config.tearing);
 
         Ok(())

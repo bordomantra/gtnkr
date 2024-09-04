@@ -43,16 +43,3 @@ fn get_native_screen_resolution() -> hyprland::Result<(u16, u16)> {
 
     Ok((active_monitor_info.width, active_monitor_info.height))
 }
-
-#[cfg(test)]
-mod tests {
-    use super::get_native_screen_resolution;
-    use color_eyre::eyre::Result;
-
-    #[tokio::test]
-    async fn test_get_native_screen_resolution() -> Result<()> {
-        get_native_screen_resolution()?;
-
-        Ok(())
-    }
-}

@@ -6,7 +6,7 @@ Add gtnkr to your flake.nix
 ```nix
 inputs = {
     ...
-	gtnkr.url = "/home/bordomantra/projects/gtnkr";
+	gtnkr.url = "github:bordomantra/gtnkr";
     ...
 };
 ```

@@ -50,7 +50,7 @@ pub async fn run() -> Result<(), GameLauncherError> {
             let (launch_command, steam_app_id) = steam_launch_command;
 
             GameLauncher::launch_by_command(launch_command, &steam_app_id.to_string(), *log_output)
-                .await
+            .await
         }
     }
 }

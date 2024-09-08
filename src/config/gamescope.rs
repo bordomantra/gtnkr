@@ -61,7 +61,7 @@ impl Default for Gamescope {
     }
 }
 
-#[derive(Deserialize, Default)]
+#[derive(Deserialize, Default, PartialEq)]
 pub enum GamescopeBackend {
     #[default]
     Auto,
@@ -105,11 +105,13 @@ impl Gamescope {
 
         let backend_as_argument = self.backend.as_gamescope_command_argument();
 
+        if self.backend != GamescopeBackend::Auto {
+            arguments.push(&backend_as_argument);
+        }
+
         if self.expose_wayland {
             arguments.push("--expose-wayland")
         }
-
-        arguments.push(&backend_as_argument);
 
         let arguments_as_string = arguments.join(" ");
 

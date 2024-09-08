@@ -1,25 +1,34 @@
 ## Installation
 
-Install [rust](https://github.com/rust-lang/rust) if you don't have it.
+Nixos:
 
-For Arch:
-```bash
-pacman -S rust
+Add gtnkr to your flake.nix
+```nix
+inputs = {
+    ...
+	gtnkr.url = "/home/bordomantra/projects/gtnkr";
+    ...
+};
 ```
 
-Install gtnkr with rust's [cargo](https://github.com/rust-lang/cargo), which should come together with [rust](https://github.com/rust-lang/rust).
-```bash
-cargo install --git https://github.com/bordomantra/gtnkr
+And also add it to Steam's extra packages:
+```nix
+programs.steam.extraPackages = [ 
+	inputs.gtnkr.packages.${pkgs.system}.default
+
+	# Necessary for gamescope to work as expected, see: https://github.com/NixOS/nixpkgs/issues/162562#issuecomment-1229444338
+	pkgs.xorg.libXcursor
+    pkgs.xorg.libXi
+    pkgs.xorg.libXinerama
+    pkgs.xorg.libXScrnSaver
+    pkgs.libpng
+    pkgs.libpulseaudio
+    pkgs.libvorbis
+    pkgs.stdenv.cc.cc.lib
+    pkgs.libkrb5
+    pkgs.keyutils
+];
 ```
-
-## Optional requirements
-
-I highly suggest you to install
-- [gamemode](https://github.com/FeralInteractive/gamemode) for Config::gamemode
-- [MangoHud](https://github.com/flightlessmango/MangoHud) for Config::mangohud
-- [Hyprland](https://github.com/hyprwm/Hyprland) for Config::gamescope::source_resolution: SourceResolution::Native
-- [gamescope](https://github.com/ValveSoftware/gamescope) for Config::gamescope
-- [libstrangle](https://github.com/milaq/libstrangle) for Config::fps_limit
 
 ## Usage
 

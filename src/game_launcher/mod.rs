@@ -103,7 +103,7 @@ impl GameLauncher {
             ActiveOutputLog::create(game_identifier, ProcessOutputLogKind::Stderr)
                 .map_err(GameLauncherError::ProcessOutputLog)?;
 
-        let mut process = Command::new("sh")
+        let mut process = Command::new("/bin/sh")
             .arg("-c")
             .arg(launch_command_string)
             .stderr(
@@ -136,10 +136,11 @@ static CLI_TOOL_INFO: phf::Map<&'static str, &'static str> = phf_map! {
 };
 
 fn find_executable_gml(name: &str) -> Result<String, GameLauncherError> {
-    if let Ok(executable_path) =
-        which(name).map(|executable| executable.to_string_lossy().to_string())
+    if which(name)
+        .map(|executable| executable.to_string_lossy().to_string())
+        .is_ok()
     {
-        return Ok(executable_path);
+        return Ok(name.to_string()); // We don't need to use the full path if it's already on $PATH
     }
 
     if let Some(pkg_name) = CLI_TOOL_INFO.get(name) {
